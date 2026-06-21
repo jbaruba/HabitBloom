@@ -4,21 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,13 +29,7 @@ import com.life.habitbloom.components.ProgressDots
 import com.life.habitbloom.components.SecondaryButton
 import com.life.habitbloom.model.CompanionType
 import com.life.habitbloom.model.GenderType
-import com.life.habitbloom.ui.theme.HabitBorder
-import com.life.habitbloom.ui.theme.HabitCard
-import com.life.habitbloom.ui.theme.HabitCream
-import com.life.habitbloom.ui.theme.HabitGreen
-import com.life.habitbloom.ui.theme.HabitLightGreen
-import com.life.habitbloom.ui.theme.HabitTextDark
-import com.life.habitbloom.ui.theme.HabitTextGrey
+import com.life.habitbloom.ui.theme.*
 
 @Composable
 fun SetupProfilePage(
@@ -56,13 +37,21 @@ fun SetupProfilePage(
     companionName: String,
     selectedGender: GenderType,
     selectedCompanion: CompanionType,
+    wakeUpTime: String,
+    sleepHours: Int,
     onUserNameChange: (String) -> Unit,
     onCompanionNameChange: (String) -> Unit,
     onGenderSelected: (GenderType) -> Unit,
+    onWakeUpTimeChange: (String) -> Unit,
+    onSleepHoursChange: (Int) -> Unit,
     onStartClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val canStartJourney = userName.trim().isNotEmpty() && companionName.trim().isNotEmpty()
+    val canStartJourney =
+        userName.trim().isNotEmpty() &&
+                companionName.trim().isNotEmpty() &&
+                wakeUpTime.trim().isNotEmpty() &&
+                sleepHours in 1..12
 
     Column(
         modifier = Modifier
@@ -88,7 +77,7 @@ fun SetupProfilePage(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Tell us a little about yourself\nand your buddy.",
+            text = "Tell us about yourself, your buddy,\nand your sleep routine.",
             color = HabitTextGrey,
             textAlign = TextAlign.Center,
             fontSize = 16.sp,
@@ -96,7 +85,7 @@ fun SetupProfilePage(
             fontWeight = FontWeight.SemiBold
         )
 
-        Spacer(modifier = Modifier.height(26.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Column(
             modifier = Modifier
@@ -106,11 +95,7 @@ fun SetupProfilePage(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(
-                        width = 1.2.dp,
-                        color = HabitBorder,
-                        shape = RoundedCornerShape(18.dp)
-                    ),
+                    .border(1.2.dp, HabitBorder, RoundedCornerShape(18.dp)),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = HabitCard),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -118,14 +103,7 @@ fun SetupProfilePage(
                 Column(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp)
                 ) {
-                    Text(
-                        text = "Your name :",
-                        color = HabitTextDark,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
+                    SectionLabel("Your name :")
 
                     HabitTextField(
                         value = userName,
@@ -135,12 +113,7 @@ fun SetupProfilePage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = "Gender :",
-                        color = HabitTextDark,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp
-                    )
+                    SectionLabel("Gender :")
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -175,14 +148,7 @@ fun SetupProfilePage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = "Buddy name :",
-                        color = HabitTextDark,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
+                    SectionLabel("Buddy name :")
 
                     HabitTextField(
                         value = companionName,
@@ -190,14 +156,28 @@ fun SetupProfilePage(
                         placeholder = "Enter buddy name"
                     )
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SectionLabel("Wake up time :")
+
+                    HabitTextField(
+                        value = wakeUpTime,
+                        onValueChange = onWakeUpTimeChange,
+                        placeholder = "Example: 07:00"
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SectionLabel("Sleep goal :")
+
+                    SleepHoursSelector(
+                        sleepHours = sleepHours,
+                        onSleepHoursChange = onSleepHoursChange
+                    )
+
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    Text(
-                        text = "Your chosen companion",
-                        color = HabitTextDark,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp
-                    )
+                    SectionLabel("Your chosen companion")
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -225,6 +205,18 @@ fun SetupProfilePage(
             onClick = onBackClick
         )
     }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        color = HabitTextDark,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 18.sp
+    )
+
+    Spacer(modifier = Modifier.height(6.dp))
 }
 
 @Composable
@@ -266,6 +258,43 @@ private fun HabitTextField(
 }
 
 @Composable
+private fun SleepHoursSelector(
+    sleepHours: Int,
+    onSleepHoursChange: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf(6, 7, 8, 9).forEach { hour ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .border(
+                        width = 1.3.dp,
+                        color = if (sleepHours == hour) HabitGreen else HabitBorder,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .background(
+                        color = if (sleepHours == hour) HabitLightGreen else HabitCard,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .clickable { onSleepHoursChange(hour) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${hour}h",
+                    color = if (sleepHours == hour) HabitGreen else HabitTextDark,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun GenderChip(
     icon: String,
     text: String,
@@ -295,13 +324,7 @@ private fun GenderChip(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = icon,
-                fontSize = 17.sp,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(1.dp))
+            Text(text = icon, fontSize = 17.sp)
 
             Text(
                 text = text,
@@ -324,11 +347,7 @@ private fun ChosenCompanionCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(128.dp)
-            .border(
-                width = 1.2.dp,
-                color = HabitBorder,
-                shape = RoundedCornerShape(17.dp)
-            ),
+            .border(1.2.dp, HabitBorder, RoundedCornerShape(17.dp)),
         shape = RoundedCornerShape(17.dp),
         colors = CardDefaults.cardColors(containerColor = HabitCard),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -348,9 +367,7 @@ private fun ChosenCompanionCard(
                 Image(
                     painter = painterResource(id = selectedCompanion.imageRes),
                     contentDescription = selectedCompanion.title,
-                    modifier = Modifier
-                        .requiredSize(170.dp)
-                        .offset(x = (-6).dp, y = 2.dp),
+                    modifier = Modifier.requiredSize(170.dp),
                     contentScale = ContentScale.Fit
                 )
             }

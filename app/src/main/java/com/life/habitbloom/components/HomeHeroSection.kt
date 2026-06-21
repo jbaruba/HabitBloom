@@ -1,5 +1,7 @@
 package com.life.habitbloom.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,7 +46,7 @@ import com.life.habitbloom.ui.theme.HabitDarkGreen
 import com.life.habitbloom.ui.theme.HabitTextDark
 import com.life.habitbloom.ui.theme.HabitTextGrey
 import kotlinx.coroutines.delay
-import java.time.LocalTime
+import java.util.Calendar
 
 @Composable
 fun HomeHeroSection(
@@ -119,21 +122,13 @@ fun HomeHeroSection(
                 )
             }
 
-            Image(
-                painter = painterResource(id = companionType.imageForStage(stage)),
-                contentDescription = companionName,
+            AnimatedCompanionImage(
+                companionName = companionName,
+                companionType = companionType,
+                stage = stage,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .requiredSize(
-                        when (companionType.title) {
-                            "Seed" -> 240.dp
-                            "Puppy" -> 250.dp
-                            "Kitten" -> 245.dp
-                            else -> 240.dp
-                        }
-                    )
-                    .offset(y = 6.dp),
-                contentScale = ContentScale.Fit
+                    .offset(y = 6.dp)
             )
 
             Card(
@@ -170,7 +165,6 @@ fun HomeHeroSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    // CHANGED: stage/streak higher so progress card can overlap bottom
                     .padding(start = 18.dp, end = 18.dp, bottom = 30.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -190,8 +184,68 @@ fun HomeHeroSection(
     }
 }
 
+@Composable
+private fun AnimatedCompanionImage(
+    companionName: String,
+    companionType: CompanionType,
+    stage: Int,
+    modifier: Modifier = Modifier
+) {
+    var displayedStage by remember(companionType) { mutableIntStateOf(stage) }
+    var isChanging by remember { mutableStateOf(false) }
+
+    val animatedScale by animateFloatAsState(
+        targetValue = if (isChanging) 0.72f else 1f,
+        animationSpec = tween(durationMillis = 650),
+        label = "companionScale"
+    )
+
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (isChanging) 0.25f else 1f,
+        animationSpec = tween(durationMillis = 650),
+        label = "companionAlpha"
+    )
+
+    val animatedRotation by animateFloatAsState(
+        targetValue = if (isChanging) -4f else 0f,
+        animationSpec = tween(durationMillis = 650),
+        label = "companionRotation"
+    )
+
+    LaunchedEffect(stage, companionType) {
+        if (displayedStage != stage) {
+            isChanging = true
+            delay(420)
+            displayedStage = stage
+            delay(120)
+            isChanging = false
+        }
+    }
+
+    Image(
+        painter = painterResource(id = companionType.imageForStage(displayedStage)),
+        contentDescription = companionName,
+        modifier = modifier
+            .requiredSize(
+                when (companionType.title) {
+                    "Seed" -> 240.dp
+                    "Puppy" -> 250.dp
+                    "Kitten" -> 245.dp
+                    else -> 240.dp
+                }
+            )
+            .graphicsLayer {
+                scaleX = animatedScale
+                scaleY = animatedScale
+                alpha = animatedAlpha
+                rotationZ = animatedRotation
+            },
+        contentScale = ContentScale.Fit
+    )
+}
+
 private fun getGreetingMessage(): String {
-    val hour = LocalTime.now().hour
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
     return when (hour) {
         in 5..11 -> "Good morning"

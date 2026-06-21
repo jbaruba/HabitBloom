@@ -4,27 +4,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,23 +28,16 @@ import com.life.habitbloom.components.PrimaryButton
 import com.life.habitbloom.components.ProgressDots
 import com.life.habitbloom.components.SecondaryButton
 import com.life.habitbloom.model.FocusType
-import com.life.habitbloom.ui.theme.HabitBorder
-import com.life.habitbloom.ui.theme.HabitCard
-import com.life.habitbloom.ui.theme.HabitCream
-import com.life.habitbloom.ui.theme.HabitGreen
-import com.life.habitbloom.ui.theme.HabitTextDark
-import com.life.habitbloom.ui.theme.HabitTextGrey
+import com.life.habitbloom.ui.theme.*
 
 @Composable
 fun ChooseFocusPage(
-    selectedFocus: FocusType,
-    onFocusSelected: (FocusType) -> Unit,
+    selectedFocuses: SnapshotStateList<FocusType>,
+    onFocusToggle: (FocusType) -> Unit,
     onContinueClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val selectedFocuses = remember {
-        mutableStateListOf(selectedFocus)
-    }
+    val canContinue = selectedFocuses.size == 3
 
     Column(
         modifier = Modifier
@@ -75,14 +56,14 @@ fun ChooseFocusPage(
             text = "Choose your focus",
             color = HabitTextDark,
             fontSize = 35.sp,
-            lineHeight = 30.sp,
+            lineHeight = 36.sp,
             fontWeight = FontWeight.ExtraBold
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Select 3 habit area you want to\nimprove first.",
+            text = "Select exactly 3 habit areas before you continue.",
             color = HabitTextGrey,
             textAlign = TextAlign.Center,
             fontSize = 16.sp,
@@ -90,24 +71,22 @@ fun ChooseFocusPage(
             fontWeight = FontWeight.SemiBold
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "${selectedFocuses.size}/3 selected",
+            color = if (canContinue) HabitGreen else HabitTextGrey,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         FocusType.entries.forEach { focus ->
-            val isSelected = selectedFocuses.contains(focus)
-
             FocusOptionCard(
                 focus = focus,
-                selected = isSelected,
-                onClick = {
-                    if (isSelected) {
-                        selectedFocuses.remove(focus)
-                    } else {
-                        if (selectedFocuses.size < 3) {
-                            selectedFocuses.add(focus)
-                            onFocusSelected(focus)
-                        }
-                    }
-                }
+                selected = selectedFocuses.contains(focus),
+                onClick = { onFocusToggle(focus) }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -119,7 +98,8 @@ fun ChooseFocusPage(
 
         PrimaryButton(
             text = "Continue",
-            onClick = onContinueClick
+            onClick = onContinueClick,
+            enabled = canContinue
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -164,7 +144,7 @@ private fun GoodToKnowCard() {
                 Image(
                     painter = painterResource(id = R.drawable.page3_icon5),
                     contentDescription = "Good to know",
-                    modifier = Modifier.requiredSize(120.dp), // CHANGED: much bigger icon
+                    modifier = Modifier.requiredSize(120.dp),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -186,7 +166,7 @@ private fun GoodToKnowCard() {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "You can change your focus anytime.\nYou'll still get bonus challenges from other categories!",
+                    text = "Your daily challenges will be based on your selected focus areas.",
                     color = HabitTextGrey,
                     fontSize = 15.sp,
                     lineHeight = 14.sp,

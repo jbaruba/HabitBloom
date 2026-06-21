@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,8 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.life.habitbloom.R
@@ -61,7 +62,9 @@ private enum class SettingsMode {
     EDIT_NAME,
     EDIT_GENDER,
     EDIT_COMPANION_NAME,
-    CHANGE_COMPANION
+    CHANGE_COMPANION,
+    EDIT_WAKE_UP_TIME,
+    EDIT_SLEEP_HOURS
 }
 
 @Composable
@@ -72,6 +75,8 @@ fun SettingsPage(
     onGenderChange: (GenderType) -> Unit,
     onCompanionNameChange: (String) -> Unit,
     onCompanionChange: (CompanionType) -> Unit,
+    onWakeUpTimeChange: (String) -> Unit,
+    onSleepHoursChange: (Int) -> Unit,
     onHomeClick: () -> Unit = {},
     onProgressClick: () -> Unit = {},
     onBuddyClick: () -> Unit = {},
@@ -97,6 +102,14 @@ fun SettingsPage(
 
     var tempCompanionType by remember(userProfile.companionType) {
         mutableStateOf(userProfile.companionType)
+    }
+
+    var tempWakeUpTime by remember(userProfile.wakeUpTime) {
+        mutableStateOf(userProfile.wakeUpTime)
+    }
+
+    var tempSleepHours by remember(userProfile.sleepHours) {
+        mutableIntStateOf(userProfile.sleepHours)
     }
 
     Column(
@@ -138,6 +151,14 @@ fun SettingsPage(
                     onChangeCompanionClick = {
                         tempCompanionType = userProfile.companionType
                         mode = SettingsMode.CHANGE_COMPANION
+                    },
+                    onEditWakeUpTimeClick = {
+                        tempWakeUpTime = userProfile.wakeUpTime
+                        mode = SettingsMode.EDIT_WAKE_UP_TIME
+                    },
+                    onEditSleepHoursClick = {
+                        tempSleepHours = userProfile.sleepHours
+                        mode = SettingsMode.EDIT_SLEEP_HOURS
                     }
                 )
 
@@ -200,6 +221,36 @@ fun SettingsPage(
                         mode = SettingsMode.OVERVIEW
                     }
                 )
+
+                SettingsMode.EDIT_WAKE_UP_TIME -> EditTextSettingScreen(
+                    title = "Change wake up time",
+                    label = "Wake up time",
+                    value = tempWakeUpTime,
+                    onValueChange = { tempWakeUpTime = it },
+                    originalValue = userProfile.wakeUpTime,
+                    onBackClick = {
+                        tempWakeUpTime = userProfile.wakeUpTime
+                        mode = SettingsMode.OVERVIEW
+                    },
+                    onSaveClick = {
+                        onWakeUpTimeChange(tempWakeUpTime.trim())
+                        mode = SettingsMode.OVERVIEW
+                    }
+                )
+
+                SettingsMode.EDIT_SLEEP_HOURS -> EditSleepHoursScreen(
+                    selectedHours = tempSleepHours,
+                    originalHours = userProfile.sleepHours,
+                    onSleepHoursSelected = { tempSleepHours = it },
+                    onBackClick = {
+                        tempSleepHours = userProfile.sleepHours
+                        mode = SettingsMode.OVERVIEW
+                    },
+                    onSaveClick = {
+                        onSleepHoursChange(tempSleepHours)
+                        mode = SettingsMode.OVERVIEW
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -227,7 +278,9 @@ private fun SettingsOverviewContent(
     onEditNameClick: () -> Unit,
     onEditGenderClick: () -> Unit,
     onEditCompanionNameClick: () -> Unit,
-    onChangeCompanionClick: () -> Unit
+    onChangeCompanionClick: () -> Unit,
+    onEditWakeUpTimeClick: () -> Unit,
+    onEditSleepHoursClick: () -> Unit
 ) {
     Text(
         text = "Settings",
@@ -258,14 +311,14 @@ private fun SettingsOverviewContent(
 
     SettingsGroupCard {
         SettingRow(
-            title = "Your name",
+            title = "Your name: ${userProfile.userName}",
             onClick = onEditNameClick
         )
 
         SettingDivider()
 
         SettingRow(
-            title = "Gender",
+            title = "Gender: ${userProfile.gender.title}",
             onClick = onEditGenderClick
         )
     }
@@ -276,7 +329,7 @@ private fun SettingsOverviewContent(
 
     SettingsGroupCard {
         SettingRow(
-            title = "Rename companion",
+            title = "Rename companion: ${userProfile.companionName}",
             onClick = onEditCompanionNameClick
         )
 
@@ -292,6 +345,24 @@ private fun SettingsOverviewContent(
         CompanionChoicesRow(
             selectedCompanion = userProfile.companionType,
             onCompanionSelected = {}
+        )
+    }
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    SettingSectionTitle(title = "Sleep routine", icon = "🌙")
+
+    SettingsGroupCard {
+        SettingRow(
+            title = "Wake up time: ${userProfile.wakeUpTime}",
+            onClick = onEditWakeUpTimeClick
+        )
+
+        SettingDivider()
+
+        SettingRow(
+            title = "Sleep goal: ${userProfile.sleepHours} hours",
+            onClick = onEditSleepHoursClick
         )
     }
 
@@ -369,6 +440,11 @@ private fun EditTextSettingScreen(
                     .fillMaxWidth()
                     .height(58.dp),
                 singleLine = true,
+                textStyle = TextStyle(
+                    color = HabitTextDark,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 shape = RoundedCornerShape(12.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = HabitCream,
@@ -395,6 +471,104 @@ private fun EditTextSettingScreen(
         text = "Go back",
         onClick = onBackClick
     )
+}
+
+@Composable
+private fun EditSleepHoursScreen(
+    selectedHours: Int,
+    originalHours: Int,
+    onSleepHoursSelected: (Int) -> Unit,
+    onBackClick: () -> Unit,
+    onSaveClick: () -> Unit
+) {
+    val canSave = selectedHours != originalHours
+
+    Text(
+        text = "Change sleep goal",
+        color = HabitTextDark,
+        fontSize = 26.sp,
+        lineHeight = 29.sp,
+        fontWeight = FontWeight.ExtraBold
+    )
+
+    Text(
+        text = "Choose how many hours you want to sleep.",
+        color = HabitTextGrey,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    SettingsGroupCard {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            listOf(6, 7, 8, 9).forEach { hour ->
+                SleepHourChoiceCard(
+                    hour = hour,
+                    selected = selectedHours == hour,
+                    onClick = { onSleepHoursSelected(hour) }
+                )
+
+                if (hour != 9) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(18.dp))
+
+    SettingsActionButton(
+        text = "Save change",
+        enabled = canSave,
+        onClick = onSaveClick
+    )
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    SettingsBackButton(
+        text = "Go back",
+        onClick = onBackClick
+    )
+}
+
+@Composable
+private fun SleepHourChoiceCard(
+    hour: Int,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) HabitGreen else HabitBorder,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) HabitLightGreen else HabitCard
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = "$hour hours sleep",
+                color = if (selected) HabitGreen else HabitTextDark,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+    }
 }
 
 @Composable
@@ -557,8 +731,7 @@ private fun SettingsHeader() {
             Image(
                 painter = painterResource(id = R.drawable.home_title),
                 contentDescription = "Grow Daily",
-                modifier = Modifier
-                    .requiredSize(190.dp),
+                modifier = Modifier.requiredSize(190.dp),
                 contentScale = ContentScale.Fit
             )
         }
@@ -616,7 +789,7 @@ private fun CurrentBuddyCard(
         ) {
             Image(
                 painter = painterResource(
-                    id = companionType.imageForStage((currentLevel + 1).coerceIn(1, 3))
+                    id = companionType.imageForStage((currentLevel + 1).coerceIn(1, 6))
                 ),
                 contentDescription = companionName,
                 modifier = Modifier.requiredSize(92.dp),
